@@ -83,6 +83,10 @@ export class JobManager {
     job.status = 'running';
     job.stage = 'Pending';
     job.startedAt = new Date().toISOString();
+    // eslint-disable-next-line no-console
+    console.log(
+      `[job ${job.id}] Starting import for "${job.artist}" from "${job.url}" (dryRun=${job.dryRun}, keepTemp=${job.keepTemp})`,
+    );
     this.emitUpdate(job);
 
     const applyUpdate = (update) => {

@@ -6,12 +6,13 @@ services:
     image: nd-import-helper:latest
     ports:
       - "${PORT:-5000}:5000"
-    env_file:
-      - .env
     environment:
       NODE_ENV: production
       NAVIDROME_MUSIC_PATH: /data/navidrome/music
       ND_IMPORT_BIN: /usr/local/bin/nd-import
+      PIXELDRAIN_TOKEN: ${PIXELDRAIN_TOKEN:-}
+      UNNEEDED_FILES: ${UNNEEDED_FILES:-}
+      MOCK_IMPORT: ${MOCK_IMPORT:-0}
     volumes:
       - "${HOST_NAVIDROME_MUSIC_PATH}:/data/navidrome/music:rw"
       - "${HOST_ND_IMPORT_BIN}:/usr/local/bin/nd-import:ro"
