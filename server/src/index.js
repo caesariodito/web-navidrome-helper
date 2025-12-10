@@ -8,7 +8,14 @@ import { JobManager } from './jobManager.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..', '..');
-dotenv.config({ path: path.join(projectRoot, '.env') });
+const envResult = dotenv.config({ path: path.join(projectRoot, '.env') });
+// eslint-disable-next-line no-console
+console.log('nd-import backend loading environment variables:');
+const loadedEnv = envResult.parsed ?? {};
+Object.entries(loadedEnv).forEach(([key, value]) => {
+  // eslint-disable-next-line no-console
+  console.log(`  ${key}=${value}`);
+});
 const app = express();
 const jobs = new JobManager();
 const port = process.env.PORT || 5000;
