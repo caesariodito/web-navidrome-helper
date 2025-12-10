@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 
 const FINAL_STATUSES = new Set(['success', 'failed']);
@@ -66,7 +66,7 @@ const ProgressBar = ({ percent }) => {
 const JobCard = ({ job }) => {
   const lastLogs = useMemo(() => (job.logs ?? []).slice(-4), [job.logs]);
   const active = !FINAL_STATUSES.has(job.status);
-  const percent = job.progress?.percent ?? (job.stage === 'Done' ? 100 : undefined);
+  const percent = FINAL_STATUSES.has(job.status) || job.stage === 'Done' ? 100 : job.progress?.percent ?? 0;
   return (
     <article className={`job-card ${active ? 'job-card--active' : ''}`}>
       <header className="job-card__header">
@@ -147,35 +147,53 @@ function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const streams = useRef(new Map());
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const response = await fetch('/api/jobs');
-        if (!response.ok) throw new Error('Unable to load jobs');
-        const data = await response.json();
-        setJobs(data);
-      } catch (err) {
-        setError(err.message);
-      }
+  const startStream = useCallback((jobId) => {
+    if (streams.current.has(jobId)) return;
+    const source = new EventSource(`/api/jobs/${jobId}/stream`);
+    source.onmessage = (event) => {
+      const payload = JSON.parse(event.data);
+      setJobs((prev) => mergeJob(prev, payload));
     };
-    load();
+    source.onerror = () => {
+      source.close();
+      streams.current.delete(jobId);
+    };
+    streams.current.set(jobId, source);
   }, []);
+
+  const fetchJobs = useCallback(async () => {
+    try {
+      const response = await fetch('/api/jobs');
+      if (!response.ok) throw new Error('Unable to load jobs');
+      const data = await response.json();
+      setJobs((prev) => {
+        // Merge to keep existing logs/progress while refreshing metadata.
+        const merged = data.reduce((acc, job) => mergeJob(acc, job), prev);
+        return merged;
+      });
+      data.forEach((job) => {
+        if (!FINAL_STATUSES.has(job.status)) startStream(job.id);
+      });
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [startStream]);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
+  useEffect(() => {
+    const interval = setInterval(fetchJobs, 12000);
+    return () => clearInterval(interval);
+  }, [fetchJobs]);
 
   useEffect(() => {
     jobs.forEach((job) => {
       const isFinal = FINAL_STATUSES.has(job.status);
       const hasStream = streams.current.has(job.id);
       if (!isFinal && !hasStream) {
-        const source = new EventSource(`/api/jobs/${job.id}/stream`);
-        source.onmessage = (event) => {
-          const payload = JSON.parse(event.data);
-          setJobs((prev) => mergeJob(prev, payload));
-        };
-        source.onerror = () => {
-          source.close();
-          streams.current.delete(job.id);
-        };
-        streams.current.set(job.id, source);
+        startStream(job.id);
       }
       if (isFinal && hasStream) {
         const current = streams.current.get(job.id);
@@ -214,6 +232,7 @@ function App() {
       }
       const job = await response.json();
       setJobs((prev) => mergeJob(prev, job));
+      startStream(job.id);
       setForm((prev) => ({ ...prev, artist: '', url: '' }));
     } catch (err) {
       setError(err.message);
