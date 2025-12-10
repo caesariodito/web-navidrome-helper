@@ -13,6 +13,6 @@ services:
       NAVIDROME_MUSIC_PATH: /data/navidrome/music
       ND_IMPORT_BIN: /usr/local/bin/nd-import
     volumes:
-      - "${HOST_NAVIDROME_MUSIC_PATH:?Set HOST_NAVIDROME_MUSIC_PATH in .env}:/data/navidrome/music:rw"
-      - "${HOST_ND_IMPORT_BIN:?Set HOST_ND_IMPORT_BIN in .env}:/usr/local/bin/nd-import:ro"
+      - "${HOST_NAVIDROME_MUSIC_PATH}:/data/navidrome/music:rw"
+      - "${HOST_ND_IMPORT_BIN}:/usr/local/bin/nd-import:ro"
     restart: unless-stopped
