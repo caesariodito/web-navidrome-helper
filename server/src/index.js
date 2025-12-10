@@ -16,6 +16,19 @@ Object.entries(loadedEnv).forEach(([key, value]) => {
   // eslint-disable-next-line no-console
   console.log(`  ${key}=${value}`);
 });
+const redactedEnv = Object.entries(process.env)
+  .filter(([key]) => !key.startsWith('npm_'))
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([key, value]) => {
+    if (/token|secret|password|key/i.test(key)) return [key, '<redacted>'];
+    return [key, value ?? ''];
+  });
+// eslint-disable-next-line no-console
+console.log('nd-import backend effective process.env:');
+redactedEnv.forEach(([key, value]) => {
+  // eslint-disable-next-line no-console
+  console.log(`  ${key}=${value}`);
+});
 const app = express();
 const jobs = new JobManager();
 const port = process.env.PORT || 5000;
