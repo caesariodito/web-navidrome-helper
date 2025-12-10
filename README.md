@@ -28,6 +28,7 @@ Copy `.env.example` to `.env` and fill in:
 - `ND_IMPORT_BIN` if the binary is not already on PATH (absolute path recommended).
 - `PIXELDRAIN_TOKEN`, `UNNEEDED_FILES` as needed.
 - `MOCK_IMPORT=1` to simulate jobs without touching Navidrome.
+- For Docker/Compose, also set `HOST_NAVIDROME_MUSIC_PATH` and `HOST_ND_IMPORT_BIN` to the host paths you want to bind-mount.
 
 ## Running locally
 ```bash
@@ -59,8 +60,8 @@ docker compose up --build -d
 ```
 The compose file maps:
 - Port `5000` (override with `PORT` env var).
-- Navidrome music path bind-mounted to the same path inside the container.
-- nd-import binary bind-mounted at `ND_IMPORT_BIN` (set to the absolute host path of your binary).
+- Host music path (`HOST_NAVIDROME_MUSIC_PATH`) bind-mounted to `/data/navidrome/music` in the container; `NAVIDROME_MUSIC_PATH` is set to that container path.
+- nd-import binary (`HOST_ND_IMPORT_BIN`) bind-mounted at `/usr/local/bin/nd-import`; `ND_IMPORT_BIN` is set accordingly.
 
 Adjust `docker-compose.yml` to match your host paths if they differ.
 

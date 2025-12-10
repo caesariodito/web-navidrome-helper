@@ -10,7 +10,9 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      NAVIDROME_MUSIC_PATH: /data/navidrome/music
+      ND_IMPORT_BIN: /usr/local/bin/nd-import
     volumes:
-      - ${NAVIDROME_MUSIC_PATH:-/srv/navidrome/music}:${NAVIDROME_MUSIC_PATH:-/srv/navidrome/music}:rw
-      - ${ND_IMPORT_BIN:-/usr/local/bin/nd-import}:${ND_IMPORT_BIN:-/usr/local/bin/nd-import}:ro
+      - "${HOST_NAVIDROME_MUSIC_PATH:?Set HOST_NAVIDROME_MUSIC_PATH in .env}:/data/navidrome/music:rw"
+      - "${HOST_ND_IMPORT_BIN:?Set HOST_ND_IMPORT_BIN in .env}:/usr/local/bin/nd-import:ro"
     restart: unless-stopped
