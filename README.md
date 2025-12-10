@@ -30,6 +30,10 @@ Copy `.env.example` to `.env` and fill in:
 - `MOCK_IMPORT=1` to simulate jobs without touching Navidrome.
 - For Docker/Compose, also set `HOST_NAVIDROME_MUSIC_PATH` and `HOST_ND_IMPORT_BIN` to the host paths you want to bind-mount.
 
+Optional UI auth gate (static credentials):
+- Create `web/.env` (or set env vars during `npm run build`) with `VITE_AUTH_USERNAME` and `VITE_AUTH_PASSWORD`.
+- Rebuild the frontend (`npm run build` or rebuild the Docker image) so the credentials are baked into the client bundle.
+
 ## Running locally
 ```bash
 # Terminal 1: API (respects .env in repo root)

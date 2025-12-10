@@ -3,6 +3,10 @@ import './App.css';
 
 const FINAL_STATUSES = new Set(['success', 'failed']);
 const EMPTY_FORM = { artist: '', url: '', dryRun: false, keepTemp: false };
+const AUTH_USERNAME = import.meta.env.VITE_AUTH_USERNAME?.trim();
+const AUTH_PASSWORD = import.meta.env.VITE_AUTH_PASSWORD?.trim();
+const AUTH_REQUIRED = Boolean(AUTH_USERNAME || AUTH_PASSWORD);
+const AUTH_TOKEN = AUTH_REQUIRED ? btoa(`${AUTH_USERNAME ?? ''}:${AUTH_PASSWORD ?? ''}`) : null;
 
 const mergeJob = (prevJobs, incoming) => {
   const existingIndex = prevJobs.findIndex((job) => job.id === incoming.id);
@@ -145,7 +149,24 @@ function App() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [authed, setAuthed] = useState(() => {
+    if (!AUTH_REQUIRED) return true;
+    if (typeof sessionStorage === 'undefined') return false;
+    return sessionStorage.getItem('nd-auth') === AUTH_TOKEN;
+  });
+  const [authError, setAuthError] = useState(null);
+  const [creds, setCreds] = useState({ username: '', password: '' });
   const streams = useRef(new Map());
+
+  useEffect(() => {
+    if (!AUTH_REQUIRED) return;
+    if (typeof sessionStorage === 'undefined') return;
+    const saved = sessionStorage.getItem('nd-auth');
+    if (saved && saved !== AUTH_TOKEN) {
+      sessionStorage.removeItem('nd-auth');
+      setAuthed(false);
+    }
+  }, []);
 
   const startStream = useCallback((jobId) => {
     if (streams.current.has(jobId)) return;
@@ -180,15 +201,18 @@ function App() {
   }, [startStream]);
 
   useEffect(() => {
+    if (!authed) return;
     fetchJobs();
-  }, [fetchJobs]);
+  }, [authed, fetchJobs]);
 
   useEffect(() => {
+    if (!authed) return undefined;
     const interval = setInterval(fetchJobs, 12000);
     return () => clearInterval(interval);
-  }, [fetchJobs]);
+  }, [authed, fetchJobs]);
 
   useEffect(() => {
+    if (!authed) return;
     jobs.forEach((job) => {
       const isFinal = FINAL_STATUSES.has(job.status);
       const hasStream = streams.current.has(job.id);
@@ -201,7 +225,7 @@ function App() {
         streams.current.delete(job.id);
       }
     });
-  }, [jobs]);
+  }, [authed, jobs, startStream]);
 
   useEffect(
     () => () => {
@@ -241,7 +265,63 @@ function App() {
     }
   };
 
+  const handleAuthSubmit = (event) => {
+    event.preventDefault();
+    if (!AUTH_REQUIRED) {
+      setAuthed(true);
+      return;
+    }
+    const match = creds.username === AUTH_USERNAME && creds.password === AUTH_PASSWORD;
+    if (match) {
+      if (AUTH_TOKEN && typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('nd-auth', AUTH_TOKEN);
+      }
+      setAuthError(null);
+      setAuthed(true);
+    } else {
+      setAuthError('Invalid username or password');
+      setCreds((prev) => ({ ...prev, password: '' }));
+    }
+  };
+
   const disableSubmit = submitting || !form.artist.trim() || !form.url.trim();
+
+  if (!authed) {
+    return (
+      <div className="shell">
+        <section className="panel login-panel">
+          <p className="eyebrow">Sign in</p>
+          <h2>Enter the shared credentials</h2>
+          <p className="lede">Access is gated by static credentials set at build time.</p>
+          <form className="login-form" onSubmit={handleAuthSubmit}>
+            <label>
+              <span>Username</span>
+              <input
+                value={creds.username}
+                onChange={(e) => setCreds((prev) => ({ ...prev, username: e.target.value }))}
+                autoComplete="username"
+                required
+              />
+            </label>
+            <label>
+              <span>Password</span>
+              <input
+                type="password"
+                value={creds.password}
+                onChange={(e) => setCreds((prev) => ({ ...prev, password: e.target.value }))}
+                autoComplete="current-password"
+                required
+              />
+            </label>
+            {authError && <div className="error-chip">{authError}</div>}
+            <button type="submit" className="primary login-button">
+              Unlock
+            </button>
+          </form>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="shell">
