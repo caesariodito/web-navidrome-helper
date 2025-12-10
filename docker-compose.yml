@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  nd-import-helper:
+    build: .
+    image: nd-import-helper:latest
+    ports:
+      - "${PORT:-5000}:5000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ${NAVIDROME_MUSIC_PATH:-/srv/navidrome/music}:${NAVIDROME_MUSIC_PATH:-/srv/navidrome/music}:rw
+      - ${ND_IMPORT_BIN:-/usr/local/bin/nd-import}:${ND_IMPORT_BIN:-/usr/local/bin/nd-import}:ro
+    restart: unless-stopped

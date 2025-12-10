@@ -52,6 +52,18 @@ cd ../server
 npm start
 ```
 
+## Docker / Compose
+Build the image and run with your `.env` populated (make sure `NAVIDROME_MUSIC_PATH` and `ND_IMPORT_BIN` point to real paths accessible inside the container):
+```bash
+docker compose up --build -d
+```
+The compose file maps:
+- Port `5000` (override with `PORT` env var).
+- Navidrome music path bind-mounted to the same path inside the container.
+- nd-import binary bind-mounted at `ND_IMPORT_BIN` (set to the absolute host path of your binary).
+
+Adjust `docker-compose.yml` to match your host paths if they differ.
+
 ## API quick reference
 - `POST /api/jobs` `{ artist, url, dryRun?, keepTemp? }` → `202` + job payload. Rejects missing `NAVIDROME_MUSIC_PATH` unless `MOCK_IMPORT=1`.
 - `GET /api/jobs` → list of jobs (newest first).
